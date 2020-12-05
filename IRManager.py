@@ -19,18 +19,19 @@ class IRManager:
     def processJob(self, filename):
         id = self.status[IDLE][0]
         self.status[BUSY].append(id)
-        ip = self.workers[id]
+        url = self.workers[id]
         del self.status[IDLE][0]
         my_img = {'image': open('images/' + filename, 'rb')}
-        url = "http://" + ip + ":5000/predict"
-            
+        url = "http://" + url + "/predict"
+        # todo: 
         return requests.post(url, files=my_img)
 
     
-    def addworker(self, ip):
-        self.workers[self.worker_id] = ip
+    def addworker(self, url):
+        self.workers[self.worker_id] = url
         self.status[IDLE].append(self.worker_id)
         self.worker_id+=1
+        print(self.workers.keys())
         return True
 
 # web servers
@@ -48,9 +49,7 @@ def index():
 
 @app.route('/predict', methods=['POST'])
 def upload():
-        print("begian predict")
-        # Receive the file
-        start_time = time.time()
+        print("saving file...")
 
         img = request.files['file']
         # Save the file
@@ -71,14 +70,16 @@ def upload():
         # my_img = {'name': "image1", 'image': f}
         # r = requests.post(url, files=my_img)
 
-@app.route('/addnode', methods=['GET'])
+@app.route('/addnode', methods=['POST'])
 def addnode():
     ip = request.remote_addr
-
-    if (manager.addworker(ip)):
-        return jsonify({'message': f"Worker {ip} Added Successfully: \n{manager.workers}"}), 200
+    # print(request.form['port'])
+    port = request.form['port']
+    url = ip + ":" + port
+    if (manager.addworker(url)):
+        return jsonify({'message': f"Worker {url} Added Successfully"}), 200
     else:
-        return jsonify({'message': "Worker Added Failed"}), 417
+        return jsonify({'message': "Worker Added Failed"}), 400
 
 if __name__ == '__main__':
     # http_server = WSGIServer(('0.0.0.0', 5555), app)
