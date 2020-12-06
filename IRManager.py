@@ -29,7 +29,7 @@ class IRManager:
             else:
                 worker_id, ip = self.assignNext()
                 print(f"Try to Assign Job to Worker(id) {worker_id}")
-                if(self.checkAlive(ip)):
+                if(self.checkAlive(worker_id, ip)):
                     print(f"Successfuly Assigned Job to Worker:{worker_id}")
                     self.status[BUSY].append(worker_id)
                     r = requests.post(ip + "/predict", files=my_img)
@@ -46,9 +46,14 @@ class IRManager:
         del self.status[IDLE][0]
         return worker_id, ip
     
-    def checkAlive(self, ip):
-        print(ip)
-        r = requests.get(ip + "/status")
+    def checkAlive(self, id, ip):
+        print(f"Checking Worker Status: {id} Address: {ip} ")
+        try:
+            r = requests.get(ip + "/status")
+        except:
+            print(f"Worker {id} Connect Failed")
+            del self.workers[id]
+            return False
         return r.status_code == 200
 
     def addworker(self, url):
@@ -81,7 +86,7 @@ def upload():
         img_folder = os.path.join(root, 'images')
         if not os.path.exists(img_folder):
             os.makedirs(img_folder)
-        img.filename = str(manager.job_id) + "-" + img.filename
+        img.filename = "job-" + str(manager.job_id) + "-image"
         img_path = os.path.join(img_folder, secure_filename(img.filename))
         img.save(img_path)
         manager.job_id+=1
