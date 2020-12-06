@@ -15,14 +15,14 @@ class IRManager:
     worker_id = 0
     workers = defaultdict() # Store known workers. Key: worker id, Value: worker address
     status = [[],[]] 
-# taskQueue = Queue() #queue that hold all requests for concurrcy
+    # taskQueue = Queue() #queue that hold all requests for concurrcy
 
     def processJob(self, filename):
 
         my_img = {'image': open('images/' + filename, 'rb')}
 
         while(True):
-            if(len(self.status[IDLE]) = 0): 
+            if(len(self.status[IDLE]) == 0): 
                 # no usable worker
                 sleep(2)
                 print("No Available Worker!")

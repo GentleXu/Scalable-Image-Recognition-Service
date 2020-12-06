@@ -27,7 +27,7 @@ def predict():
     # get the image file
     f = request.files['image']
 
-    sleep(30)
+    time.sleep(30)
 
     print("Job Finished")
 
@@ -35,13 +35,15 @@ def predict():
 
 
 if __name__ == "__main__":
-    pt = imput("Input Port Number: ")
+    pt = input("Input Port Number: ")
+    
     host = "http://0.0.0.0:5555"
+    
     # poke the manager
     url = host + '/addnode'
     data = {"port": pt}
     r = requests.post(url, data)
 
-    app.run(host = "0.0.0.0", port = pt)
+    app.run(host="0.0.0.0", port=pt)
     #http_server = WSGIServer(('127.0.0.1', 5000), app)
     #http_server.serve_forever()
