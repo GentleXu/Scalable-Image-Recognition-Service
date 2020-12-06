@@ -5,33 +5,52 @@ import requests
 import time
 import os
 from multiprocessing import Queue,Process
-
+from collections import defaultdict
+from time import sleep
 BUSY = 0
 IDLE = 1
 
 class IRManager:
     job_id = 0
     worker_id = 0
-    workers = {}
+    workers = defaultdict()
     status = [[],[]]
 # taskQueue = Queue()
 
     def processJob(self, filename):
-        id = self.status[IDLE][0]
-        self.status[BUSY].append(id)
-        url = self.workers[id]
-        del self.status[IDLE][0]
-        my_img = {'image': open('images/' + filename, 'rb')}
-        url = "http://" + url + "/predict"
-        # todo: 
-        return requests.post(url, files=my_img)
 
+        my_img = {'image': open('images/' + filename, 'rb')}
+
+        while(len(self.status[IDLE])>0):
+            worker_id, ip = self.assignNext()
+            print(f"assigned: {worker_id}")
+            if(self.checkAlive(ip)):
+                self.status[BUSY].append(worker_id)
+                r = requests.post(ip + "/predict", files=my_img)
+                self.status[BUSY].remove(worker_id)
+                self.status[IDLE].append(worker_id)
+                return r
+       
+        return "No worker to process"
+        
+
+    def assignNext(self):
+
+        worker_id = self.status[IDLE][0]
+        ip = self.workers[worker_id]
+        del self.status[IDLE][0]
+        return worker_id, ip
     
+    def checkAlive(self, ip):
+        print(ip)
+        r = requests.get(ip + "/status")
+        return r.status_code == 200
+
     def addworker(self, url):
         self.workers[self.worker_id] = url
         self.status[IDLE].append(self.worker_id)
+        print(f"added worker: {url} id:{self.worker_id}")
         self.worker_id+=1
-        print(self.workers.keys())
         return True
 
 # web servers
@@ -75,7 +94,7 @@ def addnode():
     ip = request.remote_addr
     # print(request.form['port'])
     port = request.form['port']
-    url = ip + ":" + port
+    url = "http://" + ip + ":" + port
     if (manager.addworker(url)):
         return jsonify({'message': f"Worker {url} Added Successfully"}), 200
     else:
