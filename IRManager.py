@@ -22,7 +22,7 @@ class IRManager:
         if not os.path.exists(self.img_folder):
             os.makedirs(self.img_folder)
     
-    def processJob(self, filename):
+    def processJob(self, filename, jid):
 
         img = {'image': open('job-images/' + filename, 'rb')}
 
@@ -33,21 +33,27 @@ class IRManager:
                     print("No Workers!")
                     return "Service Error: No Processing Node!", 400
                 # no usable worker
-                print("No Available Worker Waiting")
+                # print("No Available Worker, Waiting")
                 time.sleep(2)
-                
-                
+            
             else:
                 worker_id, ip = self.assignNext()
-                # print(f"Try to Assign Job {self.job_id} to Worker {worker_id}")
-                print(f"Try to Assign Job to Worker {worker_id}")
+                print(f"Try to Assign Job {jid} to Worker {worker_id}")
+                
                 if(self.checkAlive(worker_id, ip)):
-                    print(f"Successfuly Assigned Job to Worker:{worker_id}")
-                    r = requests.post(ip + "/predict", files=img)
+                    print(f"Successfuly Assigned Job: {jid} to Worker:{worker_id}")
+                    try:
+                        r = requests.post(ip + "/predict", files=img)
+                    except:
+                        # worker failed during processing, reassign job
+                        print(f"Worker {worker_id} Connect Failed, Re-Assign Job {jid}")
+                        self.removeworker(worker_id)
+                        continue                   
+ 
                     self.ava_worker.append(worker_id)
-                    return r.json()['result'], 200
+                    return r.json()['result']
                 else:
-                    print(f"Failed to Assigned Job to Worker {worker_id}")
+                    print(f"Failed to Assigned Job: {jid} to Worker {worker_id}")
 
     def assignNext(self): # get id and address of the first worker in available workers
 
@@ -56,15 +62,19 @@ class IRManager:
         del self.ava_worker[0]
         return worker_id, ip
     
-    def checkAlive(self, id, ip): #check the status of a worker
-        print(f"Checking Worker Status: {id} Address: {ip} ")
+    def checkAlive(self, wid, ip): #check the status of a worker
+        print(f"Checking Worker Status: {wid} Address: {ip} ")
         try:
             r = requests.get(ip + "/status")
         except:
-            print(f"Worker {id} Connect Failed")
-            del self.workers[id]
+            print(f"Worker {wid} Connect Failed")
+            self.removeworker(wid)
             return False
-        return r.status_code == 200
+        if (r.status_code == 200):
+            return True
+        else:
+            self.removeworker(wid)
+            return False
 
     def addworker(self, url):
         self.workers[self.worker_id] = url
@@ -73,12 +83,16 @@ class IRManager:
         self.worker_id+=1
         return True
 
+    def removeworker(self, wid):
+        del self.workers[wid]
+        print(f"Removed Worker {wid}")
+
     def newjob(self):
         with mutex:
-            id = self.job_id
+            jid = self.job_id
             time.sleep(0.001)
             self.job_id+=1
-            return id
+            return jid
             
 
 # web servers
@@ -106,12 +120,10 @@ def upload():
         img.save(img_path)
         print(f"saving file... id:{jobid}")
 
-        r, code = manager.processJob(newfilename)
+        r = manager.processJob(newfilename, jobid)
         # print(f"Predict Result: {r.json()['result']}")
-        if(code == 200):
-            print(f"Job {jobid} Finished")
-        else:
-            print(f"Job {jobid} Exception!")
+        print(f"Job {jobid} Finished")
+        
         return r
 
 
@@ -122,9 +134,9 @@ def addnode():
     port = request.form['port']
     url = "http://" + ip + ":" + port
     if (manager.addworker(url)):
-        return jsonify({'message': f"Worker Added Successfully"}), 200
+        return jsonify({'message': "Worker Added Successfully"})
     else:
-        return jsonify({'message': "Worker Added Failed"}), 400
+        return jsonify({'message': "Worker Added Failed"})
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port="5555", debug=True)
+    app.run(host="0.0.0.0", port="5555")
