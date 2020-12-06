@@ -1,52 +1,62 @@
 from flask import request, Flask, render_template, jsonify
-from gevent.pywsgi import WSGIServer
 from werkzeug.utils import secure_filename
+from collections import defaultdict
+from threading import Lock
 import requests
+import json
 import time
 import os
-from multiprocessing import Queue,Process
-from collections import defaultdict
-from time import sleep
-BUSY = 0
-IDLE = 1
+
+mutex = Lock()
 
 class IRManager:
-    job_id = 0
+    # job_id = 0
     worker_id = 0
     workers = defaultdict() # Store known workers. Key: worker id, Value: worker address
-    status = [[],[]] 
-    # taskQueue = Queue() #queue that hold all requests for concurrcy
+    # taskQueue = Queue() #queue that hold all requests for concurrency
+    ava_worker = [] #available workers
 
+    def __init__(self):
+        root = os.path.dirname(__file__)
+        self.img_folder = os.path.join(root, 'job-images')
+        if not os.path.exists(self.img_folder):
+            os.makedirs(self.img_folder)
+    
     def processJob(self, filename):
 
-        my_img = {'image': open('images/' + filename, 'rb')}
+        img = {'image': open('job-images/' + filename, 'rb')}
 
         while(True):
-            if(len(self.status[IDLE]) == 0): 
+            if(len(self.ava_worker) == 0): 
+                if(len(self.workers) == 0):
+                    #no workers
+                    print("No Workers!")
+                    return "Service Error: No Processing Node!"
                 # no usable worker
-                sleep(2)
-                print("No Available Worker!")
+                print("No Available Worker Waiting")
+                time.sleep(2)
+                
+                
             else:
                 worker_id, ip = self.assignNext()
-                print(f"Try to Assign Job to Worker(id) {worker_id}")
+                # print(f"Try to Assign Job {self.job_id} to Worker {worker_id}")
+                print(f"Try to Assign Job to Worker {worker_id}")
                 if(self.checkAlive(worker_id, ip)):
                     print(f"Successfuly Assigned Job to Worker:{worker_id}")
-                    self.status[BUSY].append(worker_id)
-                    r = requests.post(ip + "/predict", files=my_img)
-                    self.status[BUSY].remove(worker_id)
-                    self.status[IDLE].append(worker_id)
-                    return r
+                    r = requests.post(ip + "/predict", files=img)
+                    self.ava_worker.append(worker_id)
+                    return r.json()['result']
                 else:
                     print(f"Failed to Assigned Job to Worker {worker_id}")
 
-    def assignNext(self): # get id and address of first worker in list IDLE
+    def assignNext(self): # get id and address of the first worker in available workers
 
-        worker_id = self.status[IDLE][0]
+        worker_id = self.ava_worker[0]
         ip = self.workers[worker_id]
-        del self.status[IDLE][0]
+        del self.ava_worker[0]
         return worker_id, ip
     
-    def checkAlive(self, id, ip):
+    def checkAlive(self, id, ip): #check the status of a worker
         print(f"Checking Worker Status: {id} Address: {ip} ")
         try:
             r = requests.get(ip + "/status")
@@ -58,10 +68,16 @@ class IRManager:
 
     def addworker(self, url):
         self.workers[self.worker_id] = url
-        self.status[IDLE].append(self.worker_id)
-        print(f"added worker: {url} id:{self.worker_id}")
+        self.ava_worker.append(self.worker_id)
+        print(f"Added Worker: {url} id:{self.worker_id}")
         self.worker_id+=1
         return True
+
+    # def newjob(self):
+    #     with mutex:
+    #         tmp = self.job_id
+    #         time.sleep(0.001)
+    #         self.job_id = tmp + 1
 
 # web servers
 app = Flask(__name__)
@@ -78,21 +94,20 @@ def index():
 
 @app.route('/predict', methods=['POST'])
 def upload():
-        print("saving file...")
-
+    
         img = request.files['file']
         # Save the file
-        root = os.path.dirname(__file__)
-        img_folder = os.path.join(root, 'images')
-        if not os.path.exists(img_folder):
-            os.makedirs(img_folder)
-        img.filename = "job-" + str(manager.job_id) + "-image"
-        img_path = os.path.join(img_folder, secure_filename(img.filename))
+
+        newfilename = secure_filename("job-" + img.filename)
+        img_path = os.path.join(manager.img_folder, newfilename)
         img.save(img_path)
-        manager.job_id+=1
-        r = manager.processJob(img.filename)
-        print(f"Predict Result: {r.json()['result']}")
-        return r.json()['result'], 200
+        # print(f"saving file... id:{manager.job_id}")
+        # manager.newjob()
+
+        r = manager.processJob(newfilename)
+        # print(f"Predict Result: {r.json()['result']}")
+        print("Job Finished")
+        return r
 
 
 @app.route('/addnode', methods=['POST'])
@@ -102,11 +117,9 @@ def addnode():
     port = request.form['port']
     url = "http://" + ip + ":" + port
     if (manager.addworker(url)):
-        return jsonify({'message': f"Worker {url} Added Successfully"}), 200
+        return jsonify({'message': f"Worker Added Successfully"}), 200
     else:
         return jsonify({'message': "Worker Added Failed"}), 400
 
 if __name__ == '__main__':
-    # http_server = WSGIServer(('0.0.0.0', 5555), app)
-    # http_server.serve_forever() 
     app.run(host="0.0.0.0", port="5555", debug=True)
