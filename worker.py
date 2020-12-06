@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 from flask import request, Flask, render_template, jsonify
 import time
 
-status = "Idel"
+status = "Alive"
 result = ""
 
 # data preprocess
@@ -81,9 +81,9 @@ if __name__ == "__main__":
 
     # poke the manager
     url = 'http://192.168.68.61:5555/addnode'
-    data = {"port": "5000"}
+    data = {"port": "6000"}
     r = requests.post(url, data)
 
-    app.run(host = "0.0.0.0", port = "5000")
+    app.run(host = "0.0.0.0", port = "6000")
     #http_server = WSGIServer(('127.0.0.1', 5000), app)
     #http_server.serve_forever()
