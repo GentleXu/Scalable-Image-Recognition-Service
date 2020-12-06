@@ -13,28 +13,33 @@ IDLE = 1
 class IRManager:
     job_id = 0
     worker_id = 0
-    workers = defaultdict()
-    status = [[],[]]
-# taskQueue = Queue()
+    workers = defaultdict() # Store known workers. Key: worker id, Value: worker address
+    status = [[],[]] 
+# taskQueue = Queue() #queue that hold all requests for concurrcy
 
     def processJob(self, filename):
 
         my_img = {'image': open('images/' + filename, 'rb')}
 
-        while(len(self.status[IDLE])>0):
-            worker_id, ip = self.assignNext()
-            print(f"assigned: {worker_id}")
-            if(self.checkAlive(ip)):
-                self.status[BUSY].append(worker_id)
-                r = requests.post(ip + "/predict", files=my_img)
-                self.status[BUSY].remove(worker_id)
-                self.status[IDLE].append(worker_id)
-                return r
-       
-        return "No worker to process"
-        
+        while(True):
+            if(len(self.status[IDLE]) = 0): 
+                # no usable worker
+                sleep(2)
+                print("No Available Worker!")
+            else:
+                worker_id, ip = self.assignNext()
+                print(f"Try to Assign Job to Worker(id) {worker_id}")
+                if(self.checkAlive(ip)):
+                    print(f"Successfuly Assigned Job to Worker:{worker_id}")
+                    self.status[BUSY].append(worker_id)
+                    r = requests.post(ip + "/predict", files=my_img)
+                    self.status[BUSY].remove(worker_id)
+                    self.status[IDLE].append(worker_id)
+                    return r
+                else:
+                    print(f"Failed to Assigned Job to Worker {worker_id}")
 
-    def assignNext(self):
+    def assignNext(self): # get id and address of first worker in list IDLE
 
         worker_id = self.status[IDLE][0]
         ip = self.workers[worker_id]
@@ -76,18 +81,14 @@ def upload():
         img_folder = os.path.join(root, 'images')
         if not os.path.exists(img_folder):
             os.makedirs(img_folder)
-        img.filename = str(manager.job_id) +"-"+ img.filename
+        img.filename = str(manager.job_id) + "-" + img.filename
         img_path = os.path.join(img_folder, secure_filename(img.filename))
         img.save(img_path)
         manager.job_id+=1
         r = manager.processJob(img.filename)
-        # print(r.json()['result'])
-        return r.json()['result']
-        
-        # return jsonify({'message': "No Idle Worker"}), 417
-        # return jsonify({'message': "get & save image", 'file': img.filename}), 200
-        # my_img = {'name': "image1", 'image': f}
-        # r = requests.post(url, files=my_img)
+        print(f"Predict Result: {r.json()['result']}")
+        return r.json()['result'], 200
+
 
 @app.route('/addnode', methods=['POST'])
 def addnode():

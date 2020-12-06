@@ -5,6 +5,7 @@ __pycache__/
 *$py.class
 manager_env/
 images/
+test/
 # C extensions
 *.so
 
