@@ -10,7 +10,7 @@ import os
 mutex = Lock()
 
 class IRManager:
-    # job_id = 0
+    job_id = 0
     worker_id = 0
     workers = defaultdict() # Store known workers. Key: worker id, Value: worker address
     # taskQueue = Queue() #queue that hold all requests for concurrency
@@ -31,7 +31,7 @@ class IRManager:
                 if(len(self.workers) == 0):
                     #no workers
                     print("No Workers!")
-                    return "Service Error: No Processing Node!"
+                    return "Service Error: No Processing Node!", 400
                 # no usable worker
                 print("No Available Worker Waiting")
                 time.sleep(2)
@@ -45,7 +45,7 @@ class IRManager:
                     print(f"Successfuly Assigned Job to Worker:{worker_id}")
                     r = requests.post(ip + "/predict", files=img)
                     self.ava_worker.append(worker_id)
-                    return r.json()['result']
+                    return r.json()['result'], 200
                 else:
                     print(f"Failed to Assigned Job to Worker {worker_id}")
 
@@ -73,11 +73,13 @@ class IRManager:
         self.worker_id+=1
         return True
 
-    # def newjob(self):
-    #     with mutex:
-    #         tmp = self.job_id
-    #         time.sleep(0.001)
-    #         self.job_id = tmp + 1
+    def newjob(self):
+        with mutex:
+            id = self.job_id
+            time.sleep(0.001)
+            self.job_id+=1
+            return id
+            
 
 # web servers
 app = Flask(__name__)
@@ -94,19 +96,22 @@ def index():
 
 @app.route('/predict', methods=['POST'])
 def upload():
-    
+        # get job id
+        jobid = manager.newjob()
+        # get file
         img = request.files['file']
-        # Save the file
-
-        newfilename = secure_filename("job-" + img.filename)
+        # save the file
+        newfilename = secure_filename("job-" + str(jobid) + "-" + img.filename)
         img_path = os.path.join(manager.img_folder, newfilename)
         img.save(img_path)
-        # print(f"saving file... id:{manager.job_id}")
-        # manager.newjob()
+        print(f"saving file... id:{jobid}")
 
-        r = manager.processJob(newfilename)
+        r, code = manager.processJob(newfilename)
         # print(f"Predict Result: {r.json()['result']}")
-        print("Job Finished")
+        if(code == 200):
+            print(f"Job {jobid} Finished")
+        else:
+            print(f"Job {jobid} Exception!")
         return r
 
 
