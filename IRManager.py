@@ -39,8 +39,8 @@ class IRManager:
             else:
                 worker_id, ip = self.assignNext()
                 print(f"Try to Assign Job {jid} to Worker {worker_id}")
-                
-                if(self.checkAlive(worker_id, ip)):
+
+                if(self.checkAlive(worker_id)):
                     print(f"Successfuly Assigned Job: {jid} to Worker:{worker_id}")
                     try:
                         r = requests.post(ip + "/predict", files=img)
@@ -62,10 +62,10 @@ class IRManager:
         del self.ava_worker[0]
         return worker_id, ip
     
-    def checkAlive(self, wid, ip): #check the status of a worker
-        print(f"Checking Worker Status: {wid} Address: {ip} ")
+    def checkAlive(self, wid): #check status of a worker
+        print(f"Checking Worker {wid} Status")
         try:
-            r = requests.get(ip + "/status")
+            r = requests.get(self.workers[wid] + "/status")
         except:
             print(f"Worker {wid} Connect Failed")
             self.removeworker(wid)
@@ -77,10 +77,15 @@ class IRManager:
             return False
 
     def addworker(self, url):
-        self.workers[self.worker_id] = url
-        self.ava_worker.append(self.worker_id)
-        print(f"Added Worker: {url} id:{self.worker_id}")
-        self.worker_id+=1
+        with mutex:
+            wid = self.worker_id
+            time.sleep(0.001)
+            self.worker_id+=1
+            self.workers[wid] = url
+            self.ava_worker.append(wid)
+
+        print(f"Added Worker: {wid} address: {url}")
+
         return True
 
     def removeworker(self, wid):
@@ -136,7 +141,7 @@ def addnode():
     if (manager.addworker(url)):
         return jsonify({'message': "Worker Added Successfully"})
     else:
-        return jsonify({'message': "Worker Added Failed"})
+        return jsonify({'message': "Worker Added Failed"}), 400
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port="5555")
