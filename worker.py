@@ -80,7 +80,8 @@ def getResult():
 if __name__ == "__main__":
 
     # poke the manager
-    url = 'http://192.168.68.61:5555/addnode'
+    host = os.environ['MANAGER_HOST']
+    url = "http://" + host + ":5555/addnode"
     data = {"port": "6000"}
     r = requests.post(url, data)
 
