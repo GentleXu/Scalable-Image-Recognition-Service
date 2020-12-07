@@ -20,8 +20,8 @@ class Process(multiprocessing.Process):
   
 url = "http://pcvm1-20.instageni.osu.edu:5555/predict"
 
-base_path = "/Users/runqitian/Workspace/Fall2020/CS655/FinalProject/"
-imgs = [base_path + "img1.jpg", base_path + "img2.png", base_path + "img3.jpg", base_path + "img4.jpeg", base_path + "img5.jpg"]
+base_path = "/Users/runqitian/Workspace/Fall2020/CS655/FinalProject/Scalable-Image-Recognition-Service/images/"
+imgs = [base_path + "1.jpeg", base_path + "2.jpeg", base_path + "3.jpeg", base_path + "4.jpeg", base_path + "5.jpeg"]
 
 global_start_time = time.time()
 if __name__ == "__main__":
