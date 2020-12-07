@@ -53,7 +53,7 @@ class IRManager:
                     self.ava_worker.append(worker_id)
                     return r.json()['result']
                 else:
-                    print(f"Failed to Assigned Job: {jid} to Worker {worker_id}")
+                    print(f"Failed to Assigned Job {jid} to Worker {worker_id}")
 
     def assignNext(self): # get id and address of the first worker in available workers
 
@@ -84,7 +84,7 @@ class IRManager:
             self.workers[wid] = url
             self.ava_worker.append(wid)
 
-        print(f"Added Worker: {wid} address: {url}")
+        print(f"Added Worker {wid} address: {url}")
 
         return True
 
@@ -123,7 +123,7 @@ def upload():
         newfilename = secure_filename("job-" + str(jobid) + "-" + img.filename)
         img_path = os.path.join(manager.img_folder, newfilename)
         img.save(img_path)
-        print(f"saving file... id:{jobid}")
+        print(f"Saving File... id: {jobid}")
 
         r = manager.processJob(newfilename, jobid)
         # print(f"Predict Result: {r.json()['result']}")
@@ -144,4 +144,4 @@ def addnode():
         return jsonify({'message': "Worker Added Failed"}), 400
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port="5555")
+    app.run(host="0.0.0.0", port="80")
