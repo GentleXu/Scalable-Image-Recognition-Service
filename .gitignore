@@ -1,8 +1,11 @@
+.vscode
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-
+manager_env/
+images/
+test/
 # C extensions
 *.so
 
