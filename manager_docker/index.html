@@ -1,0 +1,67 @@
+<html lang="en">
+<head>
+	<title>CS655 Image Recognition</title>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	<script type="text/javascript">
+		window.onload = function() {
+			document.getElementById("fileInput").onchange = function(){
+				var reader = new FileReader();
+				reader.onload = function (e) {
+			        document.getElementById("preview").src = e.target.result;
+			    };
+			    reader.readAsDataURL(document.getElementById("fileInput").files[0]);
+			}
+		}
+		function makePrediction(){
+			var formData = new FormData();
+			formData.append('file', document.getElementById('fileInput').files[0]);
+			$.ajax({
+				method: 'POST',
+				url:"/predict",
+				contentType: false,
+				processData: false,
+				data: formData,
+				success: function(data) {
+					console.log(data);
+					document.getElementById("loading").style.display = "none";
+					document.getElementById("result").innerHTML = data;
+					document.getElementById("result").style.display = "block";
+				},
+				beforeSend: function(){
+					document.getElementById("loading").style.display = "block";
+					document.getElementById("result").style.display = "none";
+				}
+			})
+		}
+	</script>
+	<style type="text/css">
+		.loader {
+		  border: 0.3em solid #f3f3f3; /* Light grey */
+		  border-top: 0.3em solid #3498db; /* Blue */
+		  border-radius: 50%;
+		  width: 1em;
+		  height: 1em;
+		  animation: spin 2s linear infinite;
+		}
+		@keyframes spin {
+		  0% { transform: rotate(0deg); }
+		  100% { transform: rotate(360deg); }
+		}
+	</style>
+</head>
+<body>
+	<h1>Image Recognition System</h1>
+	<div>
+		<img id="preview" src="#" style="height:40vh"/>
+		<input style="display: block" type="file" id="fileInput" accept=".png, .jpg, .jpeg"/>
+	</div>
+	<div style="margin-top: 2vh">
+		<button onclick="makePrediction()">Predict</button>
+		<div>
+			<div id="loading" class="loader" style="display: none"></div>
+			<div id="result" style="display: none">yes</div>
+		</div>
+	</div>
+</body>
+</html>
+
