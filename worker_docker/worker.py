@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     # poke the manager
     host = os.environ['MANAGER_HOST']
-    url = "http://" + host + ":80/addnode"
+    url = "http://" + host + ":5555/addnode"
     data = {"port": "6000"}
     r = requests.post(url, data)
 
