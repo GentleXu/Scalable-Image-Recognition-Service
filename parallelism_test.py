@@ -19,7 +19,7 @@ class Process(multiprocessing.Process):
 		print("process {} finished, used {} s, global time passed {} s".format(self.id, time.time() - start_time, time.time() - global_start_time))
 		print(r)
 
-url = "http://pcvm1-4.geni.case.edu/predict"
+url = "http://pcvm3-2.instageni.osu.edu/predict"
 
 base_path = "./images/"
 imgs = [base_path + "1.jpeg", base_path + "2.jpeg", base_path + "3.jpeg", base_path + "4.jpeg", base_path + "5.jpeg"]
