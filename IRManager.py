@@ -31,7 +31,7 @@ class IRManager:
                 if(len(self.workers) == 0):
                     #no workers
                     print("No Workers!")
-                    return "Service Error: No Processing Node!", 400
+                    return "Service Error: No Processing Node!", 404
                 # no usable worker
                 # print("No Available Worker, Waiting")
                 time.sleep(2)
@@ -51,7 +51,7 @@ class IRManager:
                         continue                   
  
                     self.ava_worker.append(worker_id)
-                    return r.json()['result']
+                    return r.json()['result'], 200
                 else:
                     print(f"Failed to Assigned Job {jid} to Worker {worker_id}")
 
@@ -125,9 +125,10 @@ def upload():
         img.save(img_path)
         print(f"Saving File... id: {jobid}")
 
-        r = manager.processJob(newfilename, jobid)
+        r, c = manager.processJob(newfilename, jobid)
         # print(f"Predict Result: {r.json()['result']}")
-        print(f"Job {jobid} Finished")
+        if(c==200):
+            print(f"Job {jobid} Finished")
         
         return r
 

@@ -30,7 +30,7 @@ imgs = [base_path + "test0.jpg", base_path + "test1.jpg", base_path + "test2.jpg
 global_start_time = time.time()
 if __name__ == "__main__":
 	ps = []
-	for i in range(50):
+	for i in range(30):
 		p = Process(i, imgs[i%5])
 		ps.append(p)
 
