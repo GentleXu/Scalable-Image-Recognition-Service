@@ -20,7 +20,7 @@ class Process(multiprocessing.Process):
 		print(r.content)
 		# print(r.)
 
-# url = "http://pcvm1-4.geni.case.edu/predict"
+# url = "http://pc vm1-4.geni.case.edu/predict"
 
 url = "http://0.0.0.0/predict"
 
