@@ -17,18 +17,21 @@ class Process(multiprocessing.Process):
 		start_time = time.time()
 		r = requests.post(url, files={"file": open(self.imgpath, "rb")})
 		print("process {} finished, used {} s, global time passed {} s".format(self.id, time.time() - start_time, time.time() - global_start_time))
-		print(r)
+		print(r.content)
+		# print(r.)
 
-url = "http://pcvm1-4.geni.case.edu:5555/predict"
+# url = "http://pcvm1-4.geni.case.edu/predict"
 
-base_path = "/Users/alen/Desktop/test_images/"
-imgs = [base_path + "1.jpeg", base_path + "2.jpeg", base_path + "3.jpeg", base_path + "4.jpeg", base_path + "5.jpeg"]
+url = "http://0.0.0.0/predict"
+
+base_path = "test/"
+imgs = [base_path + "test0.jpg", base_path + "test1.jpg", base_path + "test2.jpg", base_path + "test3.jpg", base_path + "test4.jpg"]
 
 global_start_time = time.time()
 if __name__ == "__main__":
 	ps = []
-	for i in range(5):
-		p = Process(i, imgs[i])
+	for i in range(50):
+		p = Process(i, imgs[i%5])
 		ps.append(p)
 
 	for p in ps:
